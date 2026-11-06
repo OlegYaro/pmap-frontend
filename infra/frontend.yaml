@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  PMAP frontend: a private S3 bucket with the built site and a CloudFront
+  distribution in front of it. The same address serves the API: /api/* goes
+  to the API Gateway of the backend (stack pmap-dev-gateway) without the
+  /api prefix, so the browser sees one origin and no CORS is needed.
+
+Parameters:
+  Project:
+    Type: String
+    Default: pmap
+  Env:
+    Type: String
+    Default: dev
+  ApiDomain:
+    Type: String
+    Description: >-
+      Domain of the API Gateway, without https:// and without a path (output
+      ApiUrl of the gateway stack). scripts/aws.sh passes it.
+
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    # Kept when the stack is deleted (a non-empty bucket cannot be removed with
+    # it), but removed if the very first creation of the stack fails.
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${Project}-${Env}-frontend-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${Project}-${Env}-frontend"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Pages of the app have no file extension (/transactions/12): they all get
+  # index.html. Not done with custom error responses, because those apply to
+  # the whole distribution and would also replace 403 and 404 of the API.
+  SpaRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub "${Project}-${Env}-frontend-spa"
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Serve index.html for the routes of the app
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          if (request.uri.indexOf('.') === -1) {
+            request.uri = '/index.html';
+          }
+          return request;
+        }
+
+  # The gateway has routes like /transactions; the browser calls /api/transactions.
+  ApiPrefixFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub "${Project}-${Env}-frontend-api"
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Remove the /api prefix before the request goes to the gateway
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          request.uri = request.uri.replace(/^\/api/, '') || '/';
+          return request;
+        }
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${Project}-${Env} frontend"
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: site
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+          - Id: api
+            DomainName: !Ref ApiDomain
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          AllowedMethods: [GET, HEAD]
+          # Managed policy CachingOptimized.
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt SpaRewriteFunction.FunctionARN
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            Compress: true
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            # Managed policies: CachingDisabled, and AllViewerExceptHostHeader
+            # (sends Authorization, query string and cookies to the gateway).
+            CachePolicyId: 4135ea2d-6df8-4557-9fd5-3d9e3c8ed03d
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt ApiPrefixFunction.FunctionARN
+
+  # Only this distribution can read the bucket.
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${SiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+Outputs:
+  BucketName:
+    Value: !Ref SiteBucket
+  DistributionId:
+    Value: !Ref Distribution
+  SiteUrl:
+    Value: !Sub "https://${Distribution.DomainName}"
