@@ -120,7 +120,7 @@ Resources:
             AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
             # Managed policies: CachingDisabled, and AllViewerExceptHostHeader
             # (sends Authorization, query string and cookies to the gateway).
-            CachePolicyId: 4135ea2d-6df8-4557-9fd5-3d9e3c8ed03d
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
             FunctionAssociations:
               - EventType: viewer-request
