@@ -7,5 +7,6 @@ it('renders the shell with the home page', async () => {
   stubFetch(() => jsonResponse(200, []))
   render(<App />)
   expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
-  expect(await screen.findByText('No territories.')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument()
+  expect(await screen.findByText('No transactions match these filters')).toBeInTheDocument()
 })
