@@ -8,11 +8,11 @@ defaults and how the dev server reaches the backend.
 ## Requirements
 
 ### Requirement: Routes and placeholder pages
-The app SHALL serve these routes, each inside the shared layout: `/` (the transactions page), `/analytics`,
-`/transactions/:id` and `/admin`. `/analytics` SHALL show a placeholder page with a heading naming the page.
-`/admin` SHALL be reached through the admin guard and, for an admin, show a placeholder page with the heading
-"Admin". The `/transactions/:id` page SHALL show the transaction with that id (see the transaction-detail
-capability); it is reached from a row of the transactions list.
+The app SHALL serve these routes, each inside the shared layout: `/` (the transactions page), `/analytics` (the
+analytics page, see the analytics-page capability), `/transactions/:id` and `/admin`. `/admin` SHALL be reached
+through the admin guard and, for an admin, show the admin page (see the admin-page capability). The `/transactions/:id`
+page SHALL show the transaction with that id (see the transaction-detail capability); it is reached from a row of the
+transactions list.
 
 #### Scenario: Home route shows the transactions page
 - **WHEN** the user opens `/`
@@ -20,12 +20,12 @@ capability); it is reached from a row of the transactions list.
 
 #### Scenario: Known route renders its page
 - **WHEN** the user opens `/analytics`
-- **THEN** the layout is shown with a heading for the analytics page
+- **THEN** the layout is shown with the heading "Analytics" and the analytics sections
 
 #### Scenario: Admin placeholder for an admin
 - **GIVEN** the user is authenticated as admin
 - **WHEN** the user opens `/admin`
-- **THEN** the layout is shown with the heading "Admin"
+- **THEN** the layout is shown with the heading "Admin" and the admin tabs
 
 #### Scenario: Id is shown on the detail page
 - **WHEN** the user opens `/transactions/42`
@@ -45,6 +45,8 @@ The routes `/login` and `/transactions` SHALL NOT exist and SHALL show the not-f
 
 ### Requirement: Not-found page
 A path that matches no route SHALL show a not-found page inside the shared layout, with a link back to `/`.
+The page SHALL use the same empty-state look as the other states of the app: a heading "Page not found", a short
+explanation and the link as a button.
 
 #### Scenario: Unknown path
 - **WHEN** the user opens `/does-not-exist`
@@ -124,3 +126,17 @@ keeps text off the viewport edge down to a 360px wide screen.
 #### Scenario: Narrow screen
 - **WHEN** the viewport is 360px wide
 - **THEN** page content has side padding and the page does not scroll horizontally
+
+### Requirement: Skip link and main landmark
+The first focusable element of every page SHALL be a link "Skip to main content" that is visible only while it has focus.
+Activating it SHALL move focus to the main content area, which SHALL be a `main` landmark. The link SHALL work without
+changing the URL path or the filters in it.
+
+#### Scenario: First tab stop
+- **WHEN** the user presses Tab once on a freshly loaded page
+- **THEN** the "Skip to main content" link has focus and is visible
+
+#### Scenario: Skipping
+- **GIVEN** the skip link has focus
+- **WHEN** the user presses Enter
+- **THEN** focus is inside the main area and the URL is unchanged

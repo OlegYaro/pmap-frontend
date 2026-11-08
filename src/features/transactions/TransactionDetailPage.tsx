@@ -6,8 +6,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EMPTY } from '@/lib/format'
+import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { ApiError } from '../../api/errors'
+import { useAuth } from '../../auth/useAuth'
 import { useTerritoryOptions } from '../filters/useTerritoryOptions'
+import { EditTransactionButton } from './EditTransactionButton'
 import { SourceAttributes, TransactionFields } from './TransactionFields'
 import { StatusBadge } from './StatusBadge'
 import { parseTransactionId, useTransaction } from './useTransaction'
@@ -20,6 +23,7 @@ export function TransactionDetailPage() {
   const { nameOf } = useTerritoryOptions()
   const location = useLocation()
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
 
   // `key` is "default" for the first entry of the session: there is no list to go back to.
   const back =
@@ -34,6 +38,7 @@ export function TransactionDetailPage() {
     )
 
   const title = id === null ? 'Transaction' : `Transaction ${id}`
+  useDocumentTitle(title)
 
   if (id === null || (query.error instanceof ApiError && query.error.status === 404)) {
     return (
@@ -90,6 +95,7 @@ export function TransactionDetailPage() {
           <>
             <StatusBadge row={transaction} />
             {manual && <Badge variant="outline">Manual</Badge>}
+            {isAdmin && <EditTransactionButton transaction={transaction} />}
             {back}
           </>
         }

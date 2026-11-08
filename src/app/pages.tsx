@@ -1,36 +1,35 @@
 import { Link } from 'react-router'
+import { EmptyState } from '@/components/EmptyState'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
+import { useDocumentTitle } from './useDocumentTitle'
 
-export function AnalyticsPage() {
-  return <PageHeader title="Analytics" description="Price trends will appear here." />
-}
-
-export function AdminPage() {
-  return <PageHeader title="Admin" description="Administration tools will appear here." />
-}
+const backHome = (
+  <Button asChild variant="outline">
+    <Link to="/">Back to the home page</Link>
+  </Button>
+)
 
 export function NotFoundPage() {
+  useDocumentTitle('Page not found')
   return (
     <>
-      <PageHeader title="Page not found" description="This page does not exist." />
-      <Button asChild variant="outline">
-        <Link to="/">Back to the home page</Link>
-      </Button>
+      <PageHeader title="Page not found" />
+      <EmptyState message="This page does not exist." action={backHome} />
     </>
   )
 }
 
 export function ForbiddenPage() {
+  useDocumentTitle('Access denied')
   return (
     <>
-      <PageHeader
-        title="Access denied"
-        description="This area is for administrators. Your account does not have the admin role."
+      <PageHeader title="Access denied" />
+      <EmptyState
+        message="This area is for administrators."
+        description="Your account does not have the admin role."
+        action={backHome}
       />
-      <Button asChild variant="outline">
-        <Link to="/">Back to the home page</Link>
-      </Button>
     </>
   )
 }

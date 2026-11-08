@@ -1,5 +1,5 @@
 import { ChevronsUpDownIcon } from 'lucide-react'
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useId, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -25,6 +25,12 @@ interface SearchableSelectProps {
   placeholder?: string
   disabled?: boolean
   className?: string
+  /** The trigger button, e.g. for a form library to focus it. */
+  ref?: Ref<HTMLButtonElement>
+  /** Marks the trigger invalid for assistive technology. */
+  invalid?: boolean
+  /** Id of the element that describes the trigger, e.g. an error message. */
+  describedBy?: string
 }
 
 interface Choice {
@@ -47,6 +53,9 @@ export function SearchableSelect({
   placeholder,
   disabled = false,
   className,
+  ref,
+  invalid,
+  describedBy,
 }: SearchableSelectProps) {
   const id = useId()
   const listId = `${id}-list`
@@ -105,10 +114,13 @@ export function SearchableSelect({
     <Popover open={open} onOpenChange={changeOpen}>
       <PopoverTrigger asChild disabled={disabled}>
         <Button
+          ref={ref}
           type="button"
           variant="outline"
           aria-haspopup="listbox"
           aria-labelledby={`${labelId} ${valueId}`}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           className={cn('w-full justify-between px-3 font-normal', className)}
         >
           <span

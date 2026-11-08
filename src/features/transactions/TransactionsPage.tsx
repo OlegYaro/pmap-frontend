@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { ErrorState } from '@/components/ErrorState'
 import { PageHeader } from '@/components/PageHeader'
+import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { TableSkeleton } from '@/components/TableSkeleton'
 import { Button } from '@/components/ui/button'
+import { ExportButton } from '../export/ExportButton'
 import { ActiveFilterChips } from '../filters/ActiveFilterChips'
 import { FilterPanel } from '../filters/FilterPanel'
 import { useFilters } from '../filters/useFilters'
@@ -20,6 +22,7 @@ export function TransactionsPage() {
   const { filters, resetFilters } = useFilters()
   const { sort, setSort } = useSort()
   const navigate = useNavigate()
+  useDocumentTitle('Transactions')
   const list = useTransactionList(filters, sort)
   const { rows } = list
   const hasFilters = Object.keys(filters).length > 0
@@ -94,7 +97,14 @@ export function TransactionsPage() {
 
   return (
     <>
-      <PageHeader title="Transactions" actions={<div data-slot="export-action" />} />
+      <PageHeader
+        title="Transactions"
+        actions={
+          <div data-slot="export-action">
+            <ExportButton filters={filters} />
+          </div>
+        }
+      />
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
         <FilterPanel />
         <ActiveFilterChips />

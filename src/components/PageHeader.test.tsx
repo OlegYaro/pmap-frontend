@@ -17,3 +17,11 @@ it('renders only the title when nothing else is given', () => {
   expect(screen.getByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
 })
+
+it('lets the actions wrap within the width on narrow screens', () => {
+  render(<PageHeader title="Transaction 42" actions={<button>Edit</button>} />)
+  expect(screen.getByRole('button', { name: 'Edit' }).parentElement).toHaveClass(
+    'flex-wrap',
+    'max-w-full',
+  )
+})

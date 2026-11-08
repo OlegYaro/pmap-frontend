@@ -1,7 +1,8 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { beforeEach, expect, it } from 'vitest'
+import { emptyApi } from '../test/analytics'
 import { REFRESH_TOKEN_KEY, stubStoredSession } from '../test/auth'
-import { deferred, jsonResponse, stubFetch } from '../test/http'
+import { deferred, stubFetch } from '../test/http'
 import { renderRoutes } from '../test/render'
 import { resetTokensForTests } from './tokens'
 
@@ -12,7 +13,7 @@ function header() {
 /** A reloaded tab of `anna` (user id 1) whose refresh succeeds with `role`. */
 function restoreSession(role: string) {
   localStorage.setItem('pmap.user_login', JSON.stringify({ id: '1', login: 'anna' }))
-  stubStoredSession(role)
+  stubStoredSession(role, emptyApi)
 }
 
 beforeEach(() => {
@@ -22,7 +23,7 @@ beforeEach(() => {
 })
 
 it('offers "Log in" to anonymous users and opens the dialog without a reason', async () => {
-  stubFetch(() => jsonResponse(200, []))
+  stubFetch(emptyApi)
   renderRoutes('/analytics')
 
   fireEvent.click(await within(header()).findByRole('button', { name: 'Log in' }))

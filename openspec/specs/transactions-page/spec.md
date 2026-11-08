@@ -8,8 +8,7 @@ sortable headers, row navigation to the detail route, and its loading, empty and
 
 ### Requirement: Page layout
 The page at `/` SHALL show a page header titled "Transactions", the filter panel with all fields, the active filter
-chips, and the table below them. The header's actions area SHALL contain an empty slot reserved for the export
-control, with no button in it.
+chips, and the table below them. The header's actions area SHALL contain the "Export CSV" button (see the csv-export capability).
 
 #### Scenario: Layout
 - **WHEN** the user opens `/`
@@ -18,7 +17,7 @@ control, with no button in it.
 
 #### Scenario: Export slot is empty
 - **WHEN** the user opens `/`
-- **THEN** the page header has the export slot and it contains no button
+- **THEN** the export slot in the page header is no longer empty: it contains the "Export CSV" button
 
 ### Requirement: Table columns
 The table SHALL have these columns in order: "Date", "Address", "City", "District", "Price", "Area", "Price/m²",

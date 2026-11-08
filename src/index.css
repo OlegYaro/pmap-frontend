@@ -18,10 +18,17 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.55 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  --success: #006300;
+  /* Chart colours (dataviz palette slots 1-2), each >= 3:1 against --card. */
+  --chart-median: #2a78d6;
+  --chart-band: #2a78d6;
+  --chart-count: #eb6834;
+  --chart-grid: #8f8f8f;
+  --chart-axis: #737373;
 }
 
 .dark {
@@ -43,6 +50,12 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  --success: #0ca30c;
+  --chart-median: #3987e5;
+  --chart-band: #3987e5;
+  --chart-count: #d95926;
+  --chart-grid: #666666;
+  --chart-axis: #a1a1a1;
 }
 
 @theme inline {
@@ -68,6 +81,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-chart-median: var(--chart-median);
+  --color-chart-count: var(--chart-count);
 }
 
 @layer base {
