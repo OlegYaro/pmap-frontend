@@ -1,36 +1,35 @@
-import { Link, useParams } from 'react-router'
+import { Link } from 'react-router'
+import { EmptyState } from '@/components/EmptyState'
+import { PageHeader } from '@/components/PageHeader'
+import { Button } from '@/components/ui/button'
+import { useDocumentTitle } from './useDocumentTitle'
 
-export function TransactionsPage() {
-  return <h1>Transactions</h1>
-}
+const backHome = (
+  <Button asChild variant="outline">
+    <Link to="/">Back to the home page</Link>
+  </Button>
+)
 
-export function TransactionDetailPage() {
-  const { id } = useParams()
+export function NotFoundPage() {
+  useDocumentTitle('Page not found')
   return (
     <>
-      <h1>Transaction</h1>
-      <p>
-        ID: <code>{id}</code>
-      </p>
+      <PageHeader title="Page not found" />
+      <EmptyState message="This page does not exist." action={backHome} />
     </>
   )
 }
 
-export function LoginPage() {
-  return <h1>Login</h1>
-}
-
-export function AdminPage() {
-  return <h1>Admin</h1>
-}
-
-export function NotFoundPage() {
+export function ForbiddenPage() {
+  useDocumentTitle('Access denied')
   return (
     <>
-      <h1>Page not found</h1>
-      <p>
-        <Link to="/">Back to the home page</Link>
-      </p>
+      <PageHeader title="Access denied" />
+      <EmptyState
+        message="This area is for administrators."
+        description="Your account does not have the admin role."
+        action={backHome}
+      />
     </>
   )
 }

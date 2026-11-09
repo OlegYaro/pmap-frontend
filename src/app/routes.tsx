@@ -1,23 +1,24 @@
 import type { RouteObject } from 'react-router'
-import { TerritoriesPreviewPage } from '../features/territories/TerritoriesPreviewPage'
+import { RequireAdmin } from '../auth/RequireAdmin'
+import { AdminPage } from '../features/admin/AdminPage'
+import { AnalyticsPage } from '../features/analytics/AnalyticsPage'
+import { TransactionsPage } from '../features/transactions/TransactionsPage'
+import { TransactionDetailPage } from '../features/transactions/TransactionDetailPage'
 import { RootLayout } from './RootLayout'
-import {
-  AdminPage,
-  LoginPage,
-  NotFoundPage,
-  TransactionDetailPage,
-  TransactionsPage,
-} from './pages'
+import { NotFoundPage } from './pages'
 
 export const routes: RouteObject[] = [
   {
     element: <RootLayout />,
     children: [
-      { index: true, element: <TerritoriesPreviewPage /> },
-      { path: 'transactions', element: <TransactionsPage /> },
+      { index: true, element: <TransactionsPage /> },
+      { path: 'analytics', element: <AnalyticsPage /> },
       { path: 'transactions/:id', element: <TransactionDetailPage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'admin', element: <AdminPage /> },
+      {
+        path: 'admin',
+        element: <RequireAdmin />,
+        children: [{ index: true, element: <AdminPage /> }],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

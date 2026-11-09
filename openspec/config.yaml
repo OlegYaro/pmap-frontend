@@ -1,32 +1,19 @@
 schema: spec-driven
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+context: |
+  PMAP frontend: React 19, Vite 8, TypeScript 7, TanStack Query, React Router, openapi-fetch.
+  UI: Tailwind CSS v4 + shadcn/ui, lucide-react icons, Recharts, TanStack Table v8 (NOT v9, its API differs).
+  UI language is English. Dates are ISO in URLs and shown as locale dates. Prices in PLN, areas in m2.
+  Filter state lives in the URL search params. The backend has no total count: lists use keyset paging
+  (after_id = last row id, after_value = last row's sort value as a string, omitted when null).
+  The user role comes from the JWT `role` claim and only controls what the UI shows; the gateway enforces access.
+  Public reads need no token (transactions, territories, analytics); /exports and /admin need a token.
+  Query parameters are strict on the backend (unknown ones give 422): never send sort/limit/paging to exports or analytics.
+  The gateway throttles at 20 requests/s: debounce text inputs and avoid request bursts.
+  Every screen has loading, empty and error states. Components are keyboard accessible and responsive down to 360px.
+  Tests: Vitest + Testing Library; HTTP mocked through src/test/http.ts. Do not edit src/api/schema.d.ts by hand.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
-
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+rules:
+  tasks:
+    - Each task ends with a passing `npm run build`, `npm run lint` and `npm test`.
+    - New logic comes with tests; user-visible behaviour is covered by Testing Library tests.
