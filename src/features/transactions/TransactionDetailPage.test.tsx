@@ -1,8 +1,16 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { expect, it } from 'vitest'
+import { beforeEach, expect, it } from 'vitest'
+import { resetTokensForTests } from '../../auth/tokens'
+import { stubStoredSession } from '../../test/auth'
 import { callsTo, deferred, jsonResponse } from '../../test/http'
 import { renderRoutes } from '../../test/render'
 import { stubApi, transactionPage, transactionRow } from '../../test/transactions'
+
+beforeEach(() => {
+  resetTokensForTests()
+  sessionStorage.clear()
+  localStorage.clear()
+})
 
 const detail = (overrides: Parameters<typeof transactionRow>[0] = {}) =>
   stubApi({ transaction: () => jsonResponse(200, transactionRow({ id: 42, ...overrides })) })
@@ -153,4 +161,45 @@ it('links to the list when the page is opened directly', async () => {
   const back = await screen.findByRole('link', { name: 'Back to the list' })
   expect(back).toHaveAttribute('href', '/')
   await act(async () => {})
+})
+
+/** Transaction 42 (or `answer`) for a restored session with `role`. */
+function signedIn(role: string, answer = () => jsonResponse(200, transactionRow({ id: 42 }))) {
+  return stubStoredSession(role, (request) =>
+    /^\/api\/transactions\/\d+$/.test(new URL(request.url).pathname)
+      ? answer()
+      : jsonResponse(200, []),
+  )
+}
+
+it('shows "Edit" in the header to an admin', async () => {
+  signedIn('admin')
+  renderRoutes('/transactions/42')
+  const heading = await screen.findByRole('heading', { name: 'Transaction 42' })
+  const header = heading.parentElement!.parentElement!
+  expect(await within(header).findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+})
+
+it('shows no "Edit" to an anonymous user', async () => {
+  detail()
+  renderRoutes('/transactions/42')
+  expect(await screen.findByRole('region', { name: 'Prices' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Log in' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+})
+
+it('shows no "Edit" to a user without the admin role', async () => {
+  signedIn('user')
+  renderRoutes('/transactions/42')
+  expect(await screen.findByRole('region', { name: 'Prices' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'User 1' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+})
+
+it('shows no "Edit" to an admin when the transaction is not found', async () => {
+  signedIn('admin', () => jsonResponse(404, { detail: 'Not found' }))
+  renderRoutes('/transactions/42')
+  expect(await screen.findByText('Transaction not found')).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'User 1' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
 })

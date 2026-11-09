@@ -1,14 +1,29 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { expect, it } from 'vitest'
+import { beforeEach, expect, it } from 'vitest'
+import { AuthProvider } from '../../auth/AuthProvider'
+import { resetTokensForTests } from '../../auth/tokens'
+import { stubStoredSession } from '../../test/auth'
 import { callsTo, deferred, jsonResponse } from '../../test/http'
 import { renderWithRouter } from '../../test/render'
 import { stubApi, transactionPage, transactionRow } from '../../test/transactions'
+import { TERRITORIES } from '../../test/territories'
 import { PAGE_SIZE } from './listQuery'
 import { TransactionsPage } from './TransactionsPage'
 
 function renderAt(path: string) {
-  return renderWithRouter(<TransactionsPage />, { path })
+  return renderWithRouter(
+    <AuthProvider>
+      <TransactionsPage />
+    </AuthProvider>,
+    { path },
+  )
 }
+
+beforeEach(() => {
+  resetTokensForTests()
+  sessionStorage.clear()
+  localStorage.clear()
+})
 
 /** Query params of a request as sorted [key, value] pairs. */
 function paramsOf(request: Request) {
@@ -24,7 +39,7 @@ function pages(first: unknown[], next: () => Response | Promise<Response>) {
     new URL(request.url).searchParams.has('after_id') ? next() : jsonResponse(200, first)
 }
 
-it('shows the header, filters, chips and table in order with an empty export slot', async () => {
+it('shows the header, filters, chips and table in order with the export button in the header', async () => {
   stubApi({ transactions: () => jsonResponse(200, transactionPage(3)) })
   const { container } = renderAt('/')
   await screen.findByRole('table')
@@ -39,7 +54,35 @@ it('shows the header, filters, chips and table in order with an empty export slo
   expect(follows(chips, table)).toBe(true)
   const slot = container.querySelector('[data-slot="export-action"]')
   expect(slot).toBeInTheDocument()
-  expect(slot).toBeEmptyDOMElement()
+  expect(
+    within(slot as HTMLElement).getByRole('button', { name: 'Export CSV' }),
+  ).toBeInTheDocument()
+  expect(follows(heading, slot as Node)).toBe(true)
+})
+
+it('exports with the URL filters and without the sort', async () => {
+  const mock = stubStoredSession('user', (request) => {
+    const path = new URL(request.url).pathname
+    if (path === '/api/territories') return jsonResponse(200, TERRITORIES)
+    if (path === '/api/exports') return jsonResponse(202, { id: 'e1' })
+    return jsonResponse(200, [])
+  })
+  renderAt('/?powiat_code=0264&rooms=2&sort=price_premises&order=asc')
+  const button = () => screen.getByRole('button', { name: 'Export CSV' })
+  // The locked button is replaced by the real one when the session is restored.
+  await waitFor(() => expect(button()).not.toHaveAttribute('aria-disabled'))
+
+  fireEvent.click(button())
+
+  await waitFor(() => expect(callsTo(mock, '/api/exports')).toHaveLength(1))
+  const request = callsTo(mock, '/api/exports')[0]
+  expect(request.method).toBe('POST')
+  expect(paramsOf(request)).toEqual([
+    ['powiat_code', '0264'],
+    ['rooms', '2'],
+    ['voivodeship_code', '02'],
+  ])
+  expect(await screen.findByRole('button', { name: 'Preparing export...' })).toBeDisabled()
 })
 
 it('requests the filters and sort from the URL', async () => {
@@ -73,7 +116,8 @@ it('shows skeleton rows while the first page loads', async () => {
   const held = deferred<Response>()
   stubApi({ transactions: () => held.promise })
   renderAt('/')
-  expect(screen.getByRole('status')).toHaveTextContent('Loading')
+  const list = screen.getByRole('region', { name: 'Transaction list' })
+  expect(within(list).getByRole('status')).toHaveTextContent('Loading')
   expect(screen.queryByRole('table')).not.toBeInTheDocument()
   expect(screen.queryByText(/loaded$/)).not.toBeInTheDocument()
   held.resolve(jsonResponse(200, transactionPage(2)))

@@ -1,9 +1,11 @@
 import type { RouteObject } from 'react-router'
 import { RequireAdmin } from '../auth/RequireAdmin'
+import { AdminPage } from '../features/admin/AdminPage'
+import { AnalyticsPage } from '../features/analytics/AnalyticsPage'
 import { TransactionsPage } from '../features/transactions/TransactionsPage'
 import { TransactionDetailPage } from '../features/transactions/TransactionDetailPage'
 import { RootLayout } from './RootLayout'
-import { AdminPage, AnalyticsPage, NotFoundPage } from './pages'
+import { NotFoundPage } from './pages'
 
 export const routes: RouteObject[] = [
   {

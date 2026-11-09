@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
+import { adminApi } from '../test/admin'
 import { fakeAccessToken, REFRESH_TOKEN_KEY, stubStoredSession } from '../test/auth'
 import { deferred, jsonResponse, stubFetch, tokenPair } from '../test/http'
 import { renderRoutes } from '../test/render'
@@ -13,9 +14,14 @@ beforeEach(() => {
 })
 
 it('shows the admin page to an admin', async () => {
-  stubStoredSession('admin')
+  stubStoredSession('admin', adminApi())
   renderRoutes('/admin')
   expect(await screen.findByRole('heading', { name: 'Admin' })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Runs' })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: 'Transactions' })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('button', { name: 'Details for run 1a2b3c4d' }),
+  ).toBeInTheDocument()
 })
 
 it('sends an anonymous user to / with the login dialog, replacing the history entry', async () => {
@@ -35,6 +41,8 @@ it('shows "Access denied" to a regular user without opening the dialog', async (
   const { router } = renderRoutes('/admin')
 
   expect(await screen.findByRole('heading', { name: 'Access denied' })).toBeInTheDocument()
+  expect(document.title).toBe('Access denied · PMAP')
+  expect(screen.getByRole('link', { name: /back to the home page/i })).toHaveAttribute('href', '/')
   expect(screen.getByRole('link', { name: /back to the home page/i })).toHaveAttribute('href', '/')
   expect(screen.queryByRole('heading', { name: 'Admin' })).not.toBeInTheDocument()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -44,8 +52,9 @@ it('shows "Access denied" to a regular user without opening the dialog', async (
 it('shows a skeleton and does not redirect while the session is restoring', async () => {
   sessionStorage.setItem(REFRESH_TOKEN_KEY, 'R1')
   const held = deferred<Response>()
+  const admin = adminApi()
   stubFetch((request) =>
-    new URL(request.url).pathname === '/api/auth/refresh' ? held.promise : jsonResponse(200, []),
+    new URL(request.url).pathname === '/api/auth/refresh' ? held.promise : admin(request),
   )
   const { router } = renderRoutes('/admin')
 
@@ -61,7 +70,7 @@ it('shows a skeleton and does not redirect while the session is restoring', asyn
 })
 
 it('takes an admin who logs out on /admin to / without the login dialog', async () => {
-  stubStoredSession('admin')
+  stubStoredSession('admin', adminApi())
   const { router } = renderRoutes('/admin')
   const trigger = await screen.findByRole('button', { name: 'User 1' })
   fireEvent.keyDown(trigger, { key: 'Enter' })
@@ -74,7 +83,7 @@ it('takes an admin who logs out on /admin to / without the login dialog', async 
 })
 
 it('sends an admin whose session ends on /admin to / with the dialog and the toast', async () => {
-  stubStoredSession('admin')
+  stubStoredSession('admin', adminApi())
   const { router } = renderRoutes('/admin')
   await screen.findByRole('heading', { name: 'Admin' })
   stubFetch(() => jsonResponse(401, { detail: 'Not authenticated' }))
